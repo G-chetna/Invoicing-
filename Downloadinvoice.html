@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Search</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Invoice Search</h1>
+        
+        <form action="search_invoice.php" method="POST" class="space-y-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Search by:</label>
+                <select name="search_type" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="invoice_number">Invoice Number</option>
+                    <option value="invoice_id">Invoice ID</option>
+                </select>
+            </div>
+            
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Enter Value:</label>
+                <input type="text" name="search_value" required 
+                       class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <button type="submit" 
+                    class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200">
+                Search & Download Invoice
+            </button>
+        </form>
+        
+        <?php if (isset($_GET['error'])): ?>
+        <div class="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+            <?php echo htmlspecialchars($_GET['error']); ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</body>
+</html>
+

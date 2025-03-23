@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            border-radius: 10px;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .btn-success, .btn-danger {
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <form action="generate_invoice.php" method="POST" id="invoiceForm">
+        <h2 class="text-center mb-4">Invoice Management</h2>
+        <!-- Select Corporate -->
+        <div class="form-group">
+            <label for="corporateid">Corporate:</label>
+            <select id="corporateid" name="corporateid" class="form-control">
+                <option value="">Select Corporate</option>
+            </select>
+        </div>
+
+        <!-- Client Selection -->
+        <div class="form-group">
+            <label for="clientId">Client:</label>
+            <select class="form-control" id="clientId" name="clientId" disabled>
+                <option value="">Select Client</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="startDate">Start Date:</label>
+            <input type="date" class="form-control" id="startDate" name="startDate" >
+        </div>
+        <div class="form-group">
+            <label for="endDate">End Date:</label>
+            <input type="date" class="form-control" id="endDate" name="endDate" >
+        </div>
+
+        <!-- Add Employee Button -->
+        <button type="button" class="btn btn-success mb-3" id="add-employee"><i class="fas fa-plus"></i> Add Employee</button>
+
+        <!-- Employee Table Container -->
+        <div id="employee-table-container" style="display: none;">
+            <h5>Employee Details</h5>
+            <table class="table table-bordered table-striped" id="employee-table">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Employee</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Hours</th>
+                        <th>Billing Rate</th>
+                        <th>Total Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <!-- Total Bill Section -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="totalBill">Total Bill Amount:</label>
+                                <input type="text" class="form-control" id="totalBill" name="totalBill" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="discountPercentage">Discount Percentage:</label>
+                                <input type="number" class="form-control" id="discountPercentage" name="discountPercentage" min="0" max="100" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="discountDescription">Discount Description:</label>
+                                <textarea class="form-control" id="discountDescription" name="discountDescription" rows="2"></textarea>
+                            </div>
+                            <!-- New Total Paid Field -->
+                            <div class="form-group">
+                                <label for="totalPaid">Total Paid:</label>
+                                <input type="number" class="form-control" id="totalPaid" name="totalPaid" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="discountAmount">Discount Amount:</label>
+                                <input type="text" class="form-control" id="discountAmount" name="discountAmount" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="finalAmount">Final Amount:</label>
+                                <input type="text" class="form-control" id="finalAmount" name="finalAmount" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="submit" value="Submit and Generate PDF" id="submitSelection" class="btn btn-primary mt-3"/>
+    </form>
+</div>
+<script src="cliinvoice.js"></script>
+<script>
+//  add hidden inputs for employee details
+$(document).ready(function() {
+    $('#invoiceForm').on('submit', function() {
+        $('#employee-table tbody tr').each(function(index) {
+            const employeeId = $(this).find('.employee-select').val();
+            const startDate = $(this).find('.start-date').val();
+            const endDate = $(this).find('.end-date').val();
+            const hours = $(this).find('.hours').val();
+            const totalAmount = $(this).find('.total-amount').val();
+
+            $(this).append(
+                `<input type="hidden" name="employeeId[]" value="${employeeId}">
+                <input type="hidden" name="startDate[]" value="${startDate}">
+                <input type="hidden" name="endDate[]" value="${endDate}">
+                <input type="hidden" name="hours[]" value="${hours}">
+                <input type="hidden" name="totalAmount[]" value="${totalAmount}">`
+            );
+        });
+    });
+});
+
+</script>
+<!-- Add this modal HTML just before the closing </body> tag -->
+<div class="modal fade" id="invoiceNumberModal" tabindex="-1" role="dialog" aria-labelledby="invoiceNumberModalLabel" aria-hidden="false">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="invoiceNumberModalLabel">Enter Invoice Number</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="invoiceNumberInput">Invoice Number (16 digits):</label>
+                    <input type="text" class="form-control" id="invoiceNumberInput" maxlength="16" pattern="\d{16}" required>
+                    <div class="invalid-feedback" id="invoiceNumberError"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="submitInvoiceNumber">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

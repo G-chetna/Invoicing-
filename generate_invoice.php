@@ -8,12 +8,12 @@ $pdfDirectory = 'InvoicesPDF';
 if (!file_exists($pdfDirectory)) {
     mkdir($pdfDirectory, 0777, true);
 }
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    echo "<pre>";
-    print_r($_POST);
-    echo "</pre>";
-    exit;
-}
+// if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+//     echo "<pre>";
+//     print_r($_POST);
+//     echo "</pre>";
+//     exit;
+// }
 // Sanitize all POST inputs with default values if missing
 $corporateId = $conn->real_escape_string($_POST['corporateid']);
 $clientId = $conn->real_escape_string($_POST['clientId']);

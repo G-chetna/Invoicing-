@@ -1,385 +1,243 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Fetch corporates and populate the dropdown
-    fetchCorporates();
-
-    // Hide employee table container by default
+    // Initialize form state
     $('#employee-table-container').hide();
     $('#submitSelection').hide();
+    
+    // Fetch corporates using AJAX
+    function fetchCorporates() {
+        $.ajax({
+            url: 'cliinvoice.php',
+            method: 'GET',
+            data: { action: 'getCorporates' },
+            dataType: 'json'
+        }).done(function(data) {
+            if (data.success) {
+                const corporateSelect = $('#corporateid');
+                corporateSelect.html('<option value="">Select Corporate</option>');
+                data.corporates.forEach(corporate => {
+                    corporateSelect.append(
+                        $('<option>').val(corporate.CorporateId).text(corporate.CorporateName)
+                    );
+                });
+            }
+        }).fail(function(jqXHR, textStatus) {
+            alert('Error loading corporates: ' + textStatus);
+        });
+    }
 
-    // Event: When Corporate is selected, fetch related clients
-    document.getElementById("corporateid").addEventListener("change", function () {
-        const corporateId = this.value;
-        const clientDropdown = document.getElementById("clientId");
+    // Initial corporate load
+    fetchCorporates();
 
+    // Date calculation function
+    function calculateDates(BillingFrequency, lastInvoiceDate) {
+        const startDate = lastInvoiceDate ? 
+            new Date(new Date(lastInvoiceDate).setDate(new Date(lastInvoiceDate).getDate() + 1)) :
+            new Date();
+        
+        const endDate = new Date(startDate);
+        
+        switch(BillingFrequency) {
+            case 'Full Month': endDate.setMonth(endDate.getMonth() + 1); break;
+            case 'Half Month': endDate.setDate(endDate.getDate() + 15); break;
+            case 'Two Weeks': endDate.setDate(endDate.getDate() + 14); break;
+            case 'One Week': endDate.setDate(endDate.getDate() + 7); break;
+            default: endDate.setDate(endDate.getDate() + 30);
+        }
+        
+        return {
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+        };
+    }
+
+    // Corporate change handler
+    $('#corporateid').change(function() {
+        const corporateId = $(this).val();
+        const clientDropdown = $('#clientId');
+        
         if (!corporateId) {
-            clientDropdown.disabled = true;
-            clientDropdown.innerHTML = '<option value="">Select Client</option>';
+            clientDropdown.prop('disabled', true).html('<option value="">Select Client</option>');
             return;
         }
 
-        fetch(`cliinvoice.php?action=getClients&corporateId=${corporateId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    clientDropdown.disabled = false;
-                    clientDropdown.innerHTML = '<option value="">Select Client</option>';
-                    data.clients.forEach(client => {
-                        const option = document.createElement("option");
-                        option.value = client.ClientId;
-                        option.textContent = client.ClientName;
-                        clientDropdown.appendChild(option);
-                    });
-                } else {
-                    alert(data.message || "Failed to fetch clients.");
-                }
-            })
-            .catch(error => console.error("Error fetching clients:", error));
+        $.ajax({
+            url: 'cliinvoice.php',
+            method: 'GET',
+            data: { action: 'getClients', corporateId: corporateId },
+            dataType: 'json'
+        }).done(function(data) {
+            if (data.success) {
+                clientDropdown.prop('disabled', false).html('<option value="">Select Client</option>');
+                data.clients.forEach(client => {
+                    clientDropdown.append($('<option>').val(client.ClientId).text(client.ClientName));
+                });
+            }
+        }).fail(function(jqXHR, textStatus) {
+            alert('Error loading clients: ' + textStatus);
+        });
     });
 
-    // Event: When Client is selected, fetch billing frequency and last invoice date
-    document.getElementById("clientId").addEventListener("change", function () {
-        const clientId = this.value;
+    // Client change handler
+    $('#clientId').change(function() {
+        const clientId = $(this).val();
+        if (!clientId) return;
 
-        if (!clientId) {
-            return;
-        }
+        // Clear previous data
+        $('#employee-table tbody').empty();
+        $('#employee-table-container').hide();
+        toggleSubmitButton();
 
-        // Fetch client details (billing frequency and last invoice date)
-        fetch(`cliinvoice.php?action=getClientDetails&clientId=${clientId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const BillingFrequency = data.billingFrequency;
-                    const lastInvoiceDate = data.lastInvoiceDate;
-
-                    // Calculate start and end dates based on billing frequency
-                    const { startDate, endDate } = calculateDates(BillingFrequency, lastInvoiceDate);
-
-                    // Set the calculated dates in the client fields
-                    document.getElementById("startDate").value = startDate;
-                    document.getElementById("endDate").value = endDate;
-                } else {
-                    alert(data.message || "Failed to fetch client details.");
-                }
-            })
-            .catch(error => console.error("Error fetching client details:", error));
+        // Get client details
+        $.ajax({
+            url: 'cliinvoice.php',
+            method: 'GET',
+            data: { action: 'getClientDetails', clientId: clientId },
+            dataType: 'json'
+        }).done(function(data) {
+            if (data.success) {
+                const dates = calculateDates(data.billingFrequency, data.lastInvoiceDate);
+                $('#startDate').val(dates.startDate);
+                $('#endDate').val(dates.endDate);
+            }
+        }).fail(function(jqXHR, textStatus) {
+            alert('Error loading client details: ' + textStatus);
+        });
     });
 
-    // Add Employee button functionality
-    $('#add-employee').on('click', function () {
+    // Add Employee button
+    $('#add-employee').click(function() {
         const clientId = $('#clientId').val();
-
         if (!clientId) {
             alert('Please select a client first.');
             return;
         }
 
-        // Show the employee table container and submit button
-        $('#employee-table-container').show();
-        toggleSubmitButton();
-
-        // Get the client's start and end dates
-        const startDate = document.getElementById("startDate").value;
-        const endDate = document.getElementById("endDate").value;
-
-        // Create a new row for the employee
-        const newRow = $(`
-            <tr>
-                <td>
-                    <select class="form-control employee-select">
-                        <option value="">Select Employee</option>
-                    </select>
-                </td>
-                <td><input type="date" class="form-control start-date" value="${startDate}" /></td>
-                <td><input type="date" class="form-control end-date" value="${endDate}" /></td>
-                <td><input type="number" class="form-control hours" min="0" step="0.01" /></td>
-                <td><input type="text" class="form-control billing-rate" readonly /></td>
-                <td><input type="text" class="form-control total-amount" readonly /></td>
-                <td><button type="button" class="btn btn-danger remove-row">Remove</button></td>
-            </tr>
-        `);
-
-        // Append the new row to the table
-        $('#employee-table tbody').append(newRow);
-
-        // Fetch employees with billing rates for the selected client
         $.ajax({
             url: 'cliinvoice.php',
             method: 'GET',
             data: { clientId: clientId },
-            dataType: 'json',
-            success: function (response) {
-                console.log('Response:', response); // Log the response
-                const employeeSelect = newRow.find('.employee-select');
-                
-                // Check if response.data exists, if not, use response directly
-                const employees = response.data || response;
-                
-                if (Array.isArray(employees) && employees.length > 0) {
-                    employees.forEach(function (employee) {
-                        employeeSelect.append(
-                            $('<option>')
-                                .val(employee.ClientEmployeeStateId)
-                                .text(employee.EmployeeName)
-                                .data('billingRate', employee.BillingRate)
-                        );
-                    });
-                } else {
-                    console.error('No employees found or invalid response format:', response);
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error fetching employees:', error);
-                console.log('Raw Response:', xhr.responseText); // Log the raw response
-                alert('Error fetching employees. Please try again.');
-            }
+            dataType: 'json'
+        }).done(function(response) {
+            const newRow = createEmployeeRow(response.data || response);
+            $('#employee-table tbody').append(newRow);
+            $('#employee-table-container').show();
+            toggleSubmitButton();
+        }).fail(function(jqXHR, textStatus) {
+            alert('Error loading employees: ' + textStatus);
         });
     });
 
-    // Function to calculate start and end dates
-    function calculateDates(BillingFrequency, lastInvoiceDate) {
-        const today = new Date();
-        let startDate, endDate;
+    // Create employee row
+    function createEmployeeRow(employees) {
+        const startDate = $('#startDate').val();
+        const endDate = $('#endDate').val();
+        
+        const row = $(`
+            <tr>
+                <td>
+                    <select class="form-control employee-select" name="employeeSelect[]">
+                        <option value="">Select Employee</option>
+                    </select>
+                </td>
+                <td><input type="date" class="form-control start-date" name="startDate[]" value="${startDate}"></td>
+                <td><input type="date" class="form-control end-date" name="endDate[]" value="${endDate}"></td>
+                <td><input type="number" class="form-control hours" name="hours[]" min="0" step="0.01"></td>
+                <td><input type="text" class="form-control billing-rate" readonly></td>
+                <td><input type="text" class="form-control total-amount" name="totalAmount[]" readonly></td>
+                <td><button type="button" class="btn btn-danger remove-row">Remove</button></td>
+            </tr>
+        `);
 
-        if (lastInvoiceDate) {
-            startDate = new Date(lastInvoiceDate);
-            startDate.setDate(startDate.getDate() + 1); // Start from the day after the last invoice
-        } else {
-            startDate = new Date(); // Use today's date if no previous invoice exists
-        }
+        const select = row.find('.employee-select');
+        employees.forEach(employee => {
+            select.append(
+                $('<option>')
+                    .val(employee.ClientEmployeeStateId)
+                    .text(employee.EmployeeName)
+                    .data('billingRate', employee.BillingRate)
+            );
+        });
 
-        switch (BillingFrequency) {
-            case 'Full Month':
-                endDate = new Date(startDate);
-                endDate.setMonth(endDate.getMonth() + 1); // Add 1 month
-                break;
-            case 'Half Month':
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 15); // Add 15 days
-                break;
-            case 'Two Weeks':
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 14); // Add 14 days
-                break;
-            case 'One Week':
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 7); // Add 7 days
-                break;
-            case 'Custom':
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 30); // Default to 30 days
-                break;
-            default:
-                endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 30); // Default to 30 days
-                break;
-        }
-
-        // Format dates as YYYY-MM-DD
-        const formatDate = (date) => date.toISOString().split('T')[0];
-
-        return {
-            startDate: formatDate(startDate),
-            endDate: formatDate(endDate)
-        };
+        return row;
     }
 
-    // Toggle submit button based on rows
+    // Toggle submit button visibility
     function toggleSubmitButton() {
-        const hasRows = $('#employee-table tbody tr').length > 0;
-        if (hasRows) {
-            $('#submitSelection').show();
-        } else {
-            $('#submitSelection').hide();
-        }
+        $('#submitSelection').toggle($('#employee-table tbody tr').length > 0);
     }
 
-    // Remove row functionality
-    $(document).on('click', '.remove-row', function () {
+    // Remove row handler
+    $(document).on('click', '.remove-row', function() {
         $(this).closest('tr').remove();
         updateTotalCalculations();
+        toggleSubmitButton();
         if ($('#employee-table tbody tr').length === 0) {
             $('#employee-table-container').hide();
         }
-        toggleSubmitButton(); // Update the visibility of the Submit button
     });
 
+    // Update totals calculations
     function updateTotalCalculations() {
         let totalBill = 0;
-
-        // Sum up all total amounts
-        $('.total-amount').each(function () {
+        $('.total-amount').each(function() {
             totalBill += parseFloat($(this).val()) || 0;
         });
 
-        // Update total bill
-        $('#totalBill').val(totalBill.toFixed(2));
-
-        // Calculate discount and final amount
         const discountPercentage = parseFloat($('#discountPercentage').val()) || 0;
         const discountAmount = (totalBill * discountPercentage) / 100;
         const finalAmount = totalBill - discountAmount;
 
-        // Update discount amount and final amount fields
+        $('#totalBill').val(totalBill.toFixed(2));
         $('#discountAmount').val(discountAmount.toFixed(2));
         $('#finalAmount').val(finalAmount.toFixed(2));
     }
 
-    // Employee selection change handler
-    $(document).on('change', '.employee-select', function () {
-        const row = $(this).closest('tr');
-        const selectedOption = $(this).find('option:selected');
-        const billingRate = selectedOption.data('billingRate') || '';
+    // Event handlers
+    $(document)
+        .on('change', '.employee-select', function() {
+            const row = $(this).closest('tr');
+            const billingRate = $(this).find('option:selected').data('billingRate') || 0;
+            row.find('.billing-rate').val(billingRate);
+            updateRowTotal(row);
+            
+            // Update the hidden employeeId field
+            const employeeId = $(this).val();
+            let hiddenField = row.find('input[name="employeeId[]"]');
+            if (hiddenField.length === 0) {
+                row.append(`<input type="hidden" name="employeeId[]" value="${employeeId}">`);
+            } else {
+                hiddenField.val(employeeId);
+            }
+        })
+        .on('input', '.hours', function() {
+            updateRowTotal($(this).closest('tr'));
+        })
+        .on('input', '#discountPercentage', function() {
+            const val = Math.min(parseFloat($(this).val()) || 0, 100);
+            $(this).val(val);
+            updateTotalCalculations();
+        });
 
-        // Update billing rate
-        row.find('.billing-rate').val(billingRate);
-
-        // Calculate total amount if hours exist
+    // Update row total
+    function updateRowTotal(row) {
         const hours = parseFloat(row.find('.hours').val()) || 0;
-        const total = (hours * billingRate).toFixed(2);
-        row.find('.total-amount').val(total);
-        
-        // Update totals
+        const rate = parseFloat(row.find('.billing-rate').val()) || 0;
+        row.find('.total-amount').val((hours * rate).toFixed(2));
         updateTotalCalculations();
-    });
-
-    // Hours input handler
-    $(document).on('input', '.hours', function () {
-        const row = $(this).closest('tr');
-        const hours = parseFloat($(this).val()) || 0;
-        const billingRate = parseFloat(row.find('.billing-rate').val()) || 0;
-        row.find('.total-amount').val((hours * billingRate).toFixed(2));
-        updateTotalCalculations();
-    });
-
-    // Discount percentage change handler
-    $('#discountPercentage').on('input', function () {
-        if (parseFloat($(this).val()) > 100) {
-            $(this).val(100);
-        }
-        updateTotalCalculations();
-    });
-
-    // Date validation
-    $(document).on('change', '.end-date', function () {
-        const startDate = $(this).closest('tr').find('.start-date').val();
-        const endDate = $(this).val();
-
-        if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-            alert('End date cannot be earlier than start date');
-            $(this).val('');
-        }
-    });
-
-    $(document).on('change', '.start-date', function () {
-        const endDate = $(this).closest('tr').find('.end-date').val();
-        const startDate = $(this).val();
-
-        if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
-            alert('End date cannot be earlier than start date');
-            $(this).closest('tr').find('.end-date').val('');
-        }
-    });
-
-    // Clear form function
-    function clearForm() {
-        $('#corporateId').val('');
-        $('#clientId').html('<option value="">Select Client</option>').prop('disabled', true);
-        $('#employee-table tbody').empty();
-        $('#employee-table-container').hide();
-        $('#totalBill').val('');
-        $('#discountPercentage').val('');
-        $('#discountDescription').val('');
-        $('#discountAmount').val('');
-        $('#finalAmount').val('');
-        toggleSubmitButton(); // Update the visibility of the Submit button
     }
 
-    // New code for setting the dates
-    window.onload = function () {
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-        const yyyy = today.getFullYear();
-        const formattedDate = `${yyyy}-${mm}-${dd}`;
-
-        // Set InvoiceDate and PaymentDate
-        document.getElementById("invoiceDate").value = formattedDate;
-        document.getElementById("paymentDate").value = formattedDate;
-
-        // Set DueDate (+14 days)
-        const dueDate = new Date();
-        dueDate.setDate(today.getDate() + 14);
-        const dueDd = String(dueDate.getDate()).padStart(2, '0');
-        const dueMm = String(dueDate.getMonth() + 1).padStart(2, '0');
-        const dueYyyy = dueDate.getFullYear();
-        const formattedDueDate = `${dueYyyy}-${dueMm}-${dueDd}`;
-        document.getElementById("dueDate").value = formattedDueDate;
-    };
-
-    function fetchCorporates() {
-        fetch('cliinvoice.php?action=getCorporates')
-            .then(response => response.json())  // Parse the JSON response
-            .then(data => {
-                // Check if the 'corporates' field is present in the response
-                if (data.success && Array.isArray(data.corporates)) {
-                    const corporateSelect = document.getElementById('corporateid');  // Assuming 'corporateid' is the ID of the select element
-
-                    // Clear any existing options before adding new ones
-                    corporateSelect.innerHTML = '<option value="">Select Corporate</option>';
-
-                    // Loop through each corporate and add it as an option in the select dropdown
-                    data.corporates.forEach(corporate => {
-                        const option = document.createElement('option');
-                        option.value = corporate.CorporateId;  // Set the value as the CorporateId
-                        option.textContent = corporate.CorporateName;  // Set the text as the CorporateName
-                        corporateSelect.appendChild(option);
-                    });
-                } else {
-                    // Handle the case where no corporates are found
-                    showError('No corporates available.');
-                }
-            })
-            .catch(error => {
-                // Handle any errors that occur during the fetch
-                console.error('Error fetching corporates:', error);
-                showError('Failed to fetch corporates. Please try again.');
-            });
-    }
-
-    function showError(message) {
-        alert(message);
-    }
-
-    // Prevent form submission and show modal instead
-    $('#invoiceForm').on('submit', function(e) {
-        e.preventDefault();
-        $('#invoiceNumberModal').modal('show');
-    });
-
-    // Handle invoice number input validation
-    $('#invoiceNumberInput').on('input', function() {
-        // Remove non-digit characters
-        this.value = this.value.replace(/\D/g, '');
-        
-        // Reset validation states
+    $('#invoiceNumber').on('input', function() {
+        const invoiceNumber = $(this).val().replace(/\D/g, '');
+        $(this).val(invoiceNumber);
         $(this).removeClass('is-invalid');
         $('#invoiceNumberError').text('');
-    });
-
-    // Handle invoice number submission
-    $('#submitInvoiceNumber').on('click', function() {
-        const invoiceInput = $('#invoiceNumberInput');
-        const invoiceNumber = invoiceInput.val().trim();
         
-        // Basic validation
-        if (!invoiceNumber || invoiceNumber.length !== 16) {
-            invoiceInput.addClass('is-invalid');
-            $('#invoiceNumberError').text('Please enter a valid 16-digit invoice number');
-            return;
+        if (invoiceNumber.length === 16) {
+            checkInvoiceNumber(invoiceNumber);
         }
-        
-        // Check against database
+    });
+    
+    function checkInvoiceNumber(invoiceNumber) {
         $.ajax({
             url: 'cliinvoice.php',
             method: 'GET',
@@ -388,60 +246,82 @@ document.addEventListener("DOMContentLoaded", function () {
                 invoiceNumber: invoiceNumber
             },
             success: function(response) {
-                if (response.success) {
-                    if (response.exists) {
-                        invoiceInput.addClass('is-invalid');
-                        $('#invoiceNumberError').text('This invoice number already existss. Please enter a different one.');
-                    } else {
-                        // Add invoice number to form and submit
-                        const form = $('#invoiceForm')[0];
-                        const formData = new FormData(form);
-                        formData.append('invoiceNumber', invoiceNumber);
-                        
-                        $.ajax({
-                            url: 'cliinvoice.php',
-                            method: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            success: function(submitResponse) {
-                                if (submitResponse.success) {
-                                    $('#invoiceNumberModal').modal('hide');
-                                    alert('Invoice submitted successfully!');
-                                 //  window.location.href = `generate_invoice.php?invoiceNumber=${invoiceNumber}`;
-                                } else {
-                                    alert(submitResponse.message || 'Failed to submit invoice');
-                                }
-                            },
-                            error: function() {
-                                alert('Error submitting invoice. Please try again.');
-                            }
-                        });
-                    }
-                } else {
-                    alert('Error checking invoice number. Please try again.');
+                if (response.exists) {
+                    $('#invoiceNumber').addClass('is-invalid');
+                    $('#invoiceNumberError').text('Invoice number already exists. Please use another one.');
                 }
-            },
-            error: function() {
-                alert('Error checking invoice number. Please try again.');
             }
         });
+    }
+    
+    // Modified form submission handler
+    $('#invoiceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const invoiceNumber = $('#invoiceNumber').val();
+        if (!/^\d{16}$/.test(invoiceNumber)) {
+            $('#invoiceNumber').addClass('is-invalid');
+            $('#invoiceNumberError').text('Please enter a valid 16-digit invoice number');
+            return;
+        }
+    
+        // Ensure required fields are present
+        if (!$('#corporateid').val()) {
+            alert('Please select a Corporate');
+            return;
+        }
+        
+        if (!$('#clientId').val()) {
+            alert('Please select a Client');
+            return;
+        }
+        
+        // Check if there are employee rows
+        if ($('#employee-table tbody tr').length === 0) {
+            alert('Please add at least one employee');
+            return;
+        }
+        
+        // Make sure all employees are selected and hours are entered
+        let isValid = true;
+        $('#employee-table tbody tr').each(function() {
+            const $row = $(this);
+            const employeeId = $row.find('.employee-select').val();
+            const hours = $row.find('.hours').val();
+            
+            if (!employeeId) {
+                alert('Please select an employee for all rows');
+                isValid = false;
+                return false;
+            }
+            
+            if (!hours) {
+                alert('Please enter hours for all employees');
+                isValid = false;
+                return false;
+            }
+            
+            // Ensure the hidden input for employeeId exists
+            if ($row.find('input[name="employeeId[]"]').length === 0) {
+                $row.append(`<input type="hidden" name="employeeId[]" value="${employeeId}">`);
+            }
+        });
+        
+        if (!isValid) return;
+        
+        // Direct form submission to generate_invoice.php
+        this.action = 'generate_invoice.php';
+        this.method = 'POST';
+        this.submit();
     });
 
-    // Clear invoice number input when modal is hidden
-    $('#invoiceNumberModal').on('hidden.bs.modal', function() {
-        $('#invoiceNumberInput').val('').removeClass('is-invalid');
-        $('#invoiceNumberError').text('');
-    });
+    // Clear form function
+    function clearForm() {
+        $('#corporateid').val('');
+        $('#clientId').prop('disabled', true).html('<option value="">Select Client</option>');
+        $('#employee-table tbody').empty();
+        $('#employee-table-container').hide();
+        $('#invoiceForm')[0].reset();
+        toggleSubmitButton();
+    }
 });
-fetch('cliinvoice.php?action=getCorporates')
-    .then(response => {
-        console.log(response); // Log the raw response
-        return response.json();
-    })
-    .then(data => {
-        console.log(data); // Log the parsed JSON
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });

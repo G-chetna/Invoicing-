@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Loading placeholder -->
+<div id="navbar-container"></div>
+
+<!-- Script to load navbar -->
+<script>
+    // Load navbar
+    fetch('navbar.html')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('navbar-container').innerHTML = data;
+        });
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Client</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="form.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
             .error { color: red; }
             .success-message {
@@ -22,128 +35,183 @@
                 margin-right: 10px;
             }
     </style>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand invoice-nav-brand" href="#">Invoicing</a>
     </nav>
-    <div class="form-container">
-        <h5 class="form-title">Add Client</h5>
-        <div id="successMessage" class="success-message">
-            <span class="success-checkmark">✓</span> Client added successfully
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Add Client</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="form.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            .error { color: red; }
+            .success-message {
+                display: none;
+                color: green;
+                margin: 10px 0;
+                padding: 10px;
+                background-color: #dff0d8;
+                border: 1px solid #d6e9c6;
+                border-radius: 4px;
+            }
+            .success-checkmark {
+                font-size: 20px;
+                margin-right: 10px;
+            }
+            .form-container {
+                margin-top: 20px;
+                padding: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Navbar container -->
+        <div id="navbar-container"></div>
+    
+        <div class="container">
+            <div class="form-container">
+                <h5 class="form-title">Add Client</h5>
+                <div id="successMessage" class="success-message">
+                    <span class="success-checkmark">✓</span> Client added successfully
+                </div>
+                <form id="clientForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="corporateid">Corporate:</label>
+                                <select id="corporateid" name="corporateid" class="form-control">
+                                    <option value="">Select Corporate</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="clientName">Client Name:</label>
+                                <input type="text" id="clientName" name="clientName" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="phone">Phone:</label>
+                                <input type="text" id="phone" name="phone" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="ein">EIN:</label>
+                                <input type="text" id="ein" name="ein" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">Email:</label>
+                                <input type="email" id="email" name="email" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="country">Country:</label>
+                                <input type="text" id="country" name="country" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="address1">Address Line 1:</label>
+                                <input type="text" id="address1" name="address1" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="address2">Address Line 2:</label>
+                                <input type="text" id="address2" name="address2" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="address3">Address Line 3:</label>
+                                <input type="text" id="address3" name="address3" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="city">City:</label>
+                                <input type="text" id="city" name="city" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="state">State:</label>
+                                <input type="text" id="state" name="state" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="zip">Zip:</label>
+                                <input type="text" id="zip" name="zip" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                        <div class="form-group">
+                            <label for="billingfrequency">Billing Frequency *</label>
+                            <select id="billingfrequency" name="billingfrequency" class="form-control" required>
+                                <option value="">Select Frequency</option>
+                                <option value="Full Month">Full Month (30 days)</option>
+                                <option value="Half Month">Half Month (15 days)</option>
+                                <option value="One Week">One Week (7 days)</option>
+                                <option value="Two Weeks">Two Weeks (14 days)</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="billingperiod">Billing Period (days) *</label>
+                            <input type="number" id="billingperiod" name="billingperiod" 
+                                   class="form-control" min="1" required
+                                   placeholder="Enter number of days">
+                            <small id="billingPeriodHelp" class="form-text text-muted">
+                                For custom periods only. Standard frequencies auto-fill.
+                            </small>
+                        </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
         </div>
-        <form id="clientForm">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="corporateid">Corporate:</label>
-                        <select id="corporateid" name="corporateid" class="form-control">
-                            <option value="">Select Corporate</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="clientName">Client Name:</label>
-                        <input type="text" id="clientName" name="clientName" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="phone">Phone:</label>
-                        <input type="text" id="phone" name="phone" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="ein">EIN:</label>
-                        <input type="text" id="ein" name="ein" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="country">Country:</label>
-                        <input type="text" id="country" name="country" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="address1">Address Line 1:</label>
-                        <input type="text" id="address1" name="address1" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="address2">Address Line 2:</label>
-                        <input type="text" id="address2" name="address2" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="address3">Address Line 3:</label>
-                        <input type="text" id="address3" name="address3" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="city">City:</label>
-                        <input type="text" id="city" name="city" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="state">State:</label>
-                        <input type="text" id="state" name="state" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="zip">Zip:</label>
-                        <input type="text" id="zip" name="zip" class="form-control">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="billingperiod">Billing Period:</label>
-                        <input type="number" id="billingperiod" name="billingperiod" class="form-control">
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="billingfrequency">Billing Frequency:</label>
-                        <select id="billingfrequency" name="billingfrequency" class="form-control">
-                            <option value="Select">Select Frequency</option>
-                            <option value="One Week">One Week</option>
-                            <option value="Two Weeks">Two Weeks</option>
-                            <option value="Half Month">Half Month</option>
-                            <option value="Full Month">Full Month</option>
-                            <option value="Custom">Custom</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-    </div>
-
-    <script src="clientForm.js"></script>
+    
+        <!-- Scripts -->
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+        
+        <!-- Navbar loader -->
+        <script>
+            // Load navbar
+            fetch('navbar.html')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('navbar-container').innerHTML = data;
+                });
+        </script>
+        
+        <script src="clientForm.js"></script>
+    </body>
+    </html>
 </body>
 </html>
